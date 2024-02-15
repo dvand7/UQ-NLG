@@ -20,6 +20,8 @@ def _load_pretrained_model(model_name, device, torch_dtype=torch.float16):
         model = AutoModelForCausalLM.from_pretrained(os.path.join(LLAMA_PATH, model_name), cache_dir=None, torch_dtype=torch_dtype)
     elif model_name == 'roberta-large-mnli':
          model = AutoModelForSequenceClassification.from_pretrained("roberta-large-mnli")#, torch_dtype=torch_dtype)
+    elif model_name == 'mistral-7b':
+         model = AutoModelForCausalLM.from_pretrained("HuggingFaceH4/mistral-7b-sft-beta")#, torch_dtype=torch_dtype)
     model.to(device)
     return model
 
@@ -32,6 +34,8 @@ def _load_pretrained_tokenizer(model_name, use_fast=False):
         tokenizer = AutoTokenizer.from_pretrained("microsoft/deberta-large-mnli")
     elif model_name == "roberta-large-mnli":
         tokenizer = AutoTokenizer.from_pretrained("roberta-large-mnli")
+    elif model_name == 'mistral-7b':
+        tokenizer = AutoTokenizer.from_pretrained("HuggingFaceH4/mistral-7b-sft-beta", use_fast=use_fast)
     elif model_name == 'llama-7b-hf' or model_name == 'llama-13b-hf':
         tokenizer = AutoTokenizer.from_pretrained(os.path.join(LLAMA_PATH, model_name), cache_dir=None, use_fast=use_fast)
         tokenizer.eos_token_id = 2

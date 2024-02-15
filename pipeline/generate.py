@@ -13,6 +13,7 @@ import _settings
 import dataeval.coqa as coqa
 import dataeval.nq_open as nq_open
 import dataeval.triviaqa as triviaqa
+import dataeval.musique as musique
 import models
 import utils
 
@@ -40,6 +41,8 @@ def get_dataset_fn(data_name):
         return coqa.get_dataset
     if data_name == 'nq_open':
         return nq_open.get_dataset
+    if data_name == 'musique':
+        return musique.get_dataset
 
 def get_generation_config(input_ids, tokenizer, data_name):
     assert len(input_ids.shape) == 2
@@ -50,6 +53,8 @@ def get_generation_config(input_ids, tokenizer, data_name):
         generation_config = coqa._generate_config(tokenizer)
     if data_name == 'nq_open':
         generation_config = nq_open._generate_config(tokenizer)
+    if data_name == 'musique':
+        generation_config = musique._generate_config(tokenizer)
     generation_config['max_new_tokens'] = max_length_of_generated_sequence
     generation_config['early_stopping'] = True
     # https://jaketae.github.io/study/gpt2/#setup
@@ -61,6 +66,7 @@ def get_generations(model_name:str, args, seed=10, old_sequences=None, max_num_g
     device = args.device
 
     model, tokenizer = models.load_model_and_tokenizer(model_name, args.device)
+
     utils.seed_everything(seed)
     dataset = get_dataset_fn(args.dataset)(tokenizer)
     if args.fraction_of_data_to_use < 1.0:

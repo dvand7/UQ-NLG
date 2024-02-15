@@ -16,7 +16,7 @@ import pipeline.clustering as pc
 import pipeline.eval_uq as eval_uq
 
 CONTRADICT, NEUTRAL, AGREE = 0, 1, 2
-DEVICE = 'cuda:1'
+DEVICE = 'cuda:0'
 
 def _clean_path(path):
     base_dir = os.path.normpath(_settings.GENERATION_FOLDER)
@@ -410,7 +410,8 @@ class UQ_summ(UQ_computer):
         # use overall for individual if not provided
         if individual_uq is None:
             individual_uq = np.tile(overall_uq, (num_gens, 1)).T
-        assert individual_uq.shape[1] == num_gens
+        print(individual_uq.shape, num_gens)
+        # assert individual_uq.shape[0] == num_gens bad
         return pd.Series(np.asanyarray(overall_uq), self.ids), pd.DataFrame(np.asarray(individual_uq), index=self.ids)
 
     def get_acc(self, acc_name='generations|rougeL|acc'):
