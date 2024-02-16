@@ -130,6 +130,8 @@ def get_generations(model_name:str, args, seed=10, old_sequences=None, max_num_g
         )
         if args.dataset == 'coqa':
             curr_seq['additional_answers'] = [x[0] for x in batch['additional_answers']]
+        elif args.dataset == 'musique':
+            curr_seq['additional_answers'] = [x[0] for x in batch['additional_answers']]
 
         sequences.append(curr_seq)
     return sequences
