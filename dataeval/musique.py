@@ -17,17 +17,18 @@ import _settings
 
 @functools.lru_cache()
 def get_fs_samples_prompt():
-    data = datasets.load_dataset("dgslibisey/MuSiQue", split='train')
+    data = datasets.load_dataset("dgslibisey/MuSiQue", split="train")
     indices = np.random.RandomState(42).choice(len(data), 5)
-    ret = ''
+    ret = ""
     for i in indices:
         i = int(i)
-        ret += '\nQ: ' + data[i]['question'] + '\nA: ' + data[i]['answer']
+        ret += "\nQ: " + data[i]["question"] + "\nA: " + data[i]["answer"]
     return ret
 
+
 def sample_to_prompt(sample, **kwargs):
-    if isinstance(sample['question'], list):
-        return [sample_to_prompt({'question': _}, **kwargs) for _ in sample['question']]
+    if isinstance(sample["question"], list):
+        return [sample_to_prompt({"question": _}, **kwargs) for _ in sample["question"]]
     # TODO: use unused split to sample random example questions
     return f"""Follow given examples and solve the Test Question at end in similar manner by decomposing the original questions
 Examples: [Original Question]:What government position was held by the woman who portrayed Corliss Archer in the film Kiss and Tell?,
@@ -70,7 +71,9 @@ Examples: [Original Question]:What government position was held by the woman who
 [Answer2]: The Bye Bye Man
 [Final Answer]:The Bye Bye Man
 Following the given examples generate step by step sub questions [Question1] [Answer1], [Question2] [Answer2] and generate [Final Answer] for question  by aggregating answers for sub questions [Question1], [Question2], Test Question:
-[Original Question]: {sample['question']}"""
+[Original Question]: {sample['question']}
+"""
+
 
 # def sample_to_prompt(sample, **kwargs):
 #     if isinstance(sample['question'], list):
@@ -79,49 +82,60 @@ Following the given examples generate step by step sub questions [Question1] [An
 # Q: {sample['question']}
 # A:"""
 
+
 def _generate_config(tokenizer):
-    if tokenizer.__class__.__name__ == 'LlamaTokenizer':
+    eos_token_id = []
+    if tokenizer.__class__.__name__ == "LlamaTokenizer":
         pass
         # eos_token_id = [tokenizer(_)['input_ids'][-1] for _ in ['\n', ',', '.']]
-    elif tokenizer.__class__.__name__ == 'LlamaTokenizerFast':
+    elif tokenizer.__class__.__name__ == "LlamaTokenizerFast":
         pass
         # eos_token_id = [tokenizer(_)['input_ids'][-1] for _ in ['\n', ',', '.']]
-    elif tokenizer.__class__.__name__ == 'GPT2Tokenizer':
-        eos_token_id = [tokenizer.encode(_)[1] for _ in ['\n', ',', '.']]
+    elif tokenizer.__class__.__name__ == "GPT2Tokenizer":
+        eos_token_id = [tokenizer.encode(_)[1] for _ in ["\n", ",", "."]]
     else:
         raise NotImplementedError
     eos_token_id += [tokenizer.eos_token_id]
-    bad_words_ids = [tokenizer(_)['input_ids'] for _ in ['[Original Question]:']] # only original question
+    bad_words_ids = [
+        tokenizer(_)["input_ids"] for _ in ["[Original Question]:"]
+    ]  # only original question
     return dict(eos_token_id=eos_token_id, bad_words_ids=bad_words_ids)
 
 
 def get_dataset(tokenizer):
-    df = pd.read_pickle('./data/musique.pkl')
-    data = datasets.from_pandas(df)
-    
+    df = pd.read_pickle("./data/musique.pkl")
+    data = datasets.Dataset.from_pandas(df)
+
     def process_instance(example):
-        example['additional_answers'] = example['answer_aliases']
-        example['prompt'] = sample_to_prompt({k:example[k] for k in ['question']})
-        inputs = tokenizer(example['prompt'], padding=False, truncation=False)
-        outputs = tokenizer(example['answer'], padding=False, truncation=False)
-        example['input_ids'] = inputs['input_ids']
+        example["additional_answers"] = example["answer_aliases"]
+        example["prompt"] = sample_to_prompt({k: example[k] for k in ["question"]})
+        inputs = tokenizer(example["prompt"], padding=False, truncation=False)
+        outputs = tokenizer(example["answer"], padding=False, truncation=False)
+        example["input_ids"] = inputs["input_ids"]
         example["attention_mask"] = inputs.attention_mask
         example["labels"] = outputs.input_ids.copy()
-        example["labels"] = [-100 if _ == tokenizer.pad_token_id else _ for _ in example["labels"]]
+        example["labels"] = [
+            -100 if _ == tokenizer.pad_token_id else _ for _ in example["labels"]
+        ]
         return example
-    
+
     data = data.map(process_instance, load_from_cache_file=False)
-    data = data.remove_columns(['paragraphs', 'question_decomposition', 'answer_aliases'])
+    data = data.remove_columns(
+        ["paragraphs", "question_decomposition", "answer_aliases"]
+    )
 
     data.set_format(
         type="torch",
         columns=["input_ids", "attention_mask", "labels"],
-        output_all_columns=True)
+        output_all_columns=True,
+    )
 
     return data
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     import models
 
-    tokenizer = models.load_tokenizer('mistral-7b')
-    #data = datasets.load_dataset("natural_questions", 'dev', beam_runner='DirectRunner')
+    tokenizer = models.load_tokenizer("mistral-7b")
+    # data = datasets.load_dataset("natural_questions", 'dev', beam_runner='DirectRunner')
     data = get_dataset(tokenizer)
