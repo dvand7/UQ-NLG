@@ -72,7 +72,9 @@ def _clean_sample(sample, tokenizer):
             # Use "[Final Answer]:" if available
             string_to_filter_on = "[Final Answer]:"
             if string_to_filter_on in cleaned_text:
-                cleaned_text = cleaned_text.split(string)[-1].split("\n")[0]
+                cleaned_text = cleaned_text.split(string)[-1]
+                if "\n" in cleaned_text:
+                    cleaned_text = cleaned_text.split("\n")[0]
         else:
             strings_to_filter_on = [
                 ".",
