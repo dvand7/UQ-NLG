@@ -27,7 +27,7 @@ def get_key_from_generated_strings_path_new(path):
     return f"{specs}_{run_id}"
 
 @functools.lru_cache(maxsize=4)
-def read_cleaned_outputs_new(path):
+def read_cleaned_outputs_new(path, cot_used = False):
     # Re-organize the result and include the "cleaned" answers.
     # This is the same as the semantic entropy paper.
     # The post-processing is a bit ugly, but somewhat unavoidable because
@@ -38,7 +38,7 @@ def read_cleaned_outputs_new(path):
     if cleaned_sequences is None:
         sequences = utils.cached_read_pickle(path)
         tokenizer = models.load_tokenizer(_get_model_name(path))
-        cleaned_sequences = [lw._clean_sample(sample, tokenizer) for sample in tqdm.tqdm(sequences)]
+        cleaned_sequences = [lw._clean_sample(sample, tokenizer, cot_used) for sample in tqdm.tqdm(sequences)]
         ptd.manual_cache(key, obj=cleaned_sequences, write=True)
     return cleaned_sequences
 
